@@ -15,6 +15,18 @@ try {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
 } catch (PDOException $e) { /* ignore */ }
 
+// Backward compatibility: add role column if table was created previously without it
+try {
+    $colCheck = $pdo->prepare("SELECT COUNT(*) AS c FROM information_schema.columns WHERE table_schema = ? AND table_name = 'password_reset_requests' AND column_name = 'role'");
+    $colCheck->execute([DB_NAME]);
+    $hasRole = (int)($colCheck->fetch()['c'] ?? 0) > 0;
+    if (!$hasRole) {
+        // Add as NULL-able to avoid failing on existing rows; new inserts should provide a role
+        $pdo->exec("ALTER TABLE password_reset_requests ADD COLUMN role ENUM('Student','Faculty','Dean') NULL AFTER identifier");
+        // Optional: set a default status if missing (defensive)
+    }
+} catch (PDOException $e) { /* ignore */ }
+
 // Fetch requests joined with users to get user_id and full_name via role-specific identifiers
 try {
     $sql = "
@@ -83,20 +95,36 @@ $csrf = generateCSRFToken();
 
     /* Responsive table */
     .table-wrap { width:100%; overflow-x:auto; }
-
-    /* Toast */
-    .toast { position: fixed; right: 16px; bottom: 16px; z-index: 1000; background:#10b981; color:#fff; padding:.9rem 1rem; border-radius:10px; box-shadow: var(--card-shadow-hover); display:none; }
   </style>
 </head>
   <body>
-    <div class="page-wrap">
-      <div class="header">
-        <h2>Password Reset Requests</h2>
-        <a class="back-link" href="admin.php">← Back to Admin Dashboard</a>
+    <div class="dashboard">
+      <div class="sidebar">
+        <h2>Admin Portal</h2>
+        <a href="admin.php#overview">System Overview</a>
+        <a href="admin.php#users">User Management</a>
+        <a href="admin.php#criteria">Evaluation Criteria</a>
+        <a href="admin.php#reports">System Reports</a>
+        <a href="admin.php#eval_schedule">Manage Evaluation Schedule</a>
+        <a href="manage_password_resets.php" style="background: var(--primary-color); color:#fff;">Password Reset Requests</a>
+        <a href="admin.php#settings">Settings</a>
+        <button class="logout-btn" onclick="window.location.href='../auth.php?action=logout'">Logout</button>
       </div>
 
-      <div class="management-section">
-        <div class="filters">
+      <div class="main-content">
+        <div class="header">
+          <h2>Password Reset Requests</h2>
+        </div>
+
+        <?php if (isset($_GET['reset']) && $_GET['reset'] === 'invalid'): ?>
+          <div class="error-message" style="display:block; margin-bottom:1rem;">Invalid reset request. Please try again.</div>
+        <?php endif; ?>
+        <?php if (isset($_GET['reset']) && $_GET['reset'] === 'error'): ?>
+          <div class="error-message" style="display:block; margin-bottom:1rem;">An error occurred while resetting the password. Please check logs and try again.</div>
+        <?php endif; ?>
+
+        <div class="management-section">
+          <div class="filters">
           <input type="text" id="searchBox" placeholder="Search by name, identifier or user ID..." />
           <select id="roleFilter">
             <option value="">All Roles</option>
@@ -110,39 +138,39 @@ $csrf = generateCSRFToken();
             <option>Resolved</option>
           </select>
           <button class="btn btn-gray" onclick="window.location.reload()">Refresh</button>
-        </div>
+          </div>
 
-        <div class="table-wrap">
-          <table class="users-table" id="resetTable">
-            <thead>
-              <tr>
-                <th>User ID</th>
-                <th>Full Name</th>
-                <th>Role</th>
-                <th>Request Date</th>
-                <th>Status</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              <?php if (isset($admin_error)): ?>
-                <tr><td colspan="7">Error: <?php echo htmlspecialchars($admin_error); ?></td></tr>
-              <?php endif; ?>
-              <?php if (!$requests): ?>
-                <tr><td colspan="7" style="text-align:center; color:#6b7280;">No requests found</td></tr>
-              <?php else: ?>
-                <?php foreach ($requests as $r): ?>
-                  <tr data-role="<?php echo htmlspecialchars($r['role']); ?>" data-status="<?php echo htmlspecialchars($r['status']); ?>">
-                    <td><?php echo $r['user_id'] ? (int)$r['user_id'] : '—'; ?></td>
-                    <td><?php echo $r['full_name'] ? htmlspecialchars($r['full_name']) : 'Unknown'; ?></td>
-                    <td>
-                      <span class="role-badge role-<?php echo htmlspecialchars($r['role']); ?>"><?php echo htmlspecialchars($r['role']); ?></span>
-                    </td>
-                    <td><?php echo htmlspecialchars(date('Y-m-d H:i', strtotime($r['created_at']))); ?></td>
-                    <td><span class="status-badge status-<?php echo htmlspecialchars($r['status']); ?>"><?php echo htmlspecialchars($r['status']); ?></span></td>
-                    <td>
-                      <div class="actions">
-                        <form method="POST" action="reset_password.php" onsubmit="return confirm('Reset password to default (123)?');">
+          <div class="table-wrap">
+            <table class="users-table" id="resetTable">
+              <thead>
+                <tr>
+                  <th>User ID</th>
+                  <th>Full Name</th>
+                  <th>Role</th>
+                  <th>Request Date</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <?php if (isset($admin_error)): ?>
+                  <tr><td colspan="7">Error: <?php echo htmlspecialchars($admin_error); ?></td></tr>
+                <?php endif; ?>
+                <?php if (!$requests): ?>
+                  <tr><td colspan="7" style="text-align:center; color:#6b7280;">No requests found</td></tr>
+                <?php else: ?>
+                  <?php foreach ($requests as $r): ?>
+                    <tr data-role="<?php echo htmlspecialchars($r['role']); ?>" data-status="<?php echo htmlspecialchars($r['status']); ?>">
+                      <td><?php echo $r['user_id'] ? (int)$r['user_id'] : '—'; ?></td>
+                      <td><?php echo $r['full_name'] ? htmlspecialchars($r['full_name']) : 'Unknown'; ?></td>
+                      <td>
+                        <span class="role-badge role-<?php echo htmlspecialchars($r['role']); ?>"><?php echo htmlspecialchars($r['role']); ?></span>
+                      </td>
+                      <td><?php echo htmlspecialchars(date('Y-m-d H:i', strtotime($r['created_at']))); ?></td>
+                      <td><span class="status-badge status-<?php echo htmlspecialchars($r['status']); ?>"><?php echo htmlspecialchars($r['status']); ?></span></td>
+                      <td>
+                        <div class="actions">
+                        <form method="POST" action="reset_password.php">
                           <input type="hidden" name="csrf_token" value="<?php echo $csrf; ?>">
                           <input type="hidden" name="request_id" value="<?php echo (int)$r['request_id']; ?>">
                           <input type="hidden" name="identifier" value="<?php echo htmlspecialchars($r['identifier']); ?>">
@@ -154,23 +182,30 @@ $csrf = generateCSRFToken();
                           <input type="hidden" name="request_id" value="<?php echo (int)$r['request_id']; ?>">
                           <button class="btn btn-green" <?php echo $r['status']==='Resolved' ? 'disabled' : ''; ?> type="submit">Mark Resolved</button>
                         </form>
-                        <form method="POST" action="delete_reset_request.php" onsubmit="return confirm('Remove this request?');">
+                        <form method="POST" action="delete_reset_request.php">
                           <input type="hidden" name="csrf_token" value="<?php echo $csrf; ?>">
                           <input type="hidden" name="request_id" value="<?php echo (int)$r['request_id']; ?>">
                           <button class="btn btn-red" type="submit">Remove</button>
                         </form>
-                      </div>
-                    </td>
-                  </tr>
-                <?php endforeach; ?>
-              <?php endif; ?>
-            </tbody>
-          </table>
+                      </td>
+                    </tr>
+                  <?php endforeach; ?>
+                <?php endif; ?>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
 
-    <div id="toast" class="toast">Password has been reset to default (123).</div>
+    <!-- Success Modal -->
+    <div id="successModal" class="modal" style="display:none; position:fixed; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,.5); z-index:1000;">
+      <div class="modal-content" style="background:#fff; margin:10% auto; padding:1.5rem; border-radius:12px; width:90%; max-width:420px; text-align:center; box-shadow: var(--card-shadow-hover);">
+        <h3 style="margin-bottom:.5rem;">Password Reset</h3>
+        <p style="color:#374151; margin-bottom:1rem;">Password has been reset to default (123).</p>
+        <button id="modalCloseBtn" class="btn btn-green">OK</button>
+      </div>
+    </div>
 
     <script>
       // Client-side filtering/search
@@ -200,13 +235,24 @@ $csrf = generateCSRFToken();
         });
       })();
 
-      // Success toast if redirected with ?reset=success
+      // Success modal if redirected with ?reset=success
       (function(){
         const params = new URLSearchParams(window.location.search);
         if (params.get('reset') === 'success') {
-          const t = document.getElementById('toast');
-          t.style.display = 'block';
-          setTimeout(() => { t.style.display = 'none'; }, 3000);
+          const m = document.getElementById('successModal');
+          const b = document.getElementById('modalCloseBtn');
+          m.style.display = 'block';
+          // On OK, reload to reflect updated request status and clear query param
+          b.addEventListener('click', ()=>{
+            window.location.href = 'manage_password_resets.php';
+          });
+          m.addEventListener('click', (e)=>{ if(e.target===m) m.style.display='none'; });
+          // Safety: auto-refresh after 1.5s if user doesn't click OK
+          setTimeout(()=>{
+            if (m.style.display === 'block') {
+              window.location.href = 'manage_password_resets.php';
+            }
+          }, 1500);
         }
       })();
     </script>

@@ -287,14 +287,14 @@ foreach ($criteria as $criterion) {
     <div class="dashboard">
         <div class="sidebar">
             <h2>Admin Portal</h2>
-            <a href="#" onclick="showSection('overview')">System Overview</a>
-            <a href="#" onclick="showSection('users')">User Management</a>
-            <a href="#" onclick="showSection('criteria')">Evaluation Criteria</a>
+            <a href="#overview">System Overview</a>
+            <a href="#users">User Management</a>
+            <a href="#criteria">Evaluation Criteria</a>
             <!-- Manage Subjects removed: handled by Department Admin -->
-            <a href="#" onclick="showSection('reports')">System Reports</a>
-            <a href="#" onclick="showSection('eval_schedule')">Manage Evaluation Schedule</a>
+            <a href="#reports">System Reports</a>
+            <a href="#eval_schedule">Manage Evaluation Schedule</a>
             <a href="manage_password_resets.php">Password Reset Requests</a>
-            <a href="#" onclick="showSection('settings')">Settings</a>
+            <a href="#settings">Settings</a>
             <button class="logout-btn" onclick="logout()">Logout</button>
         </div>
 
@@ -848,8 +848,24 @@ foreach ($criteria as $criterion) {
                 if (sectionName === 'eval_schedule') {
                     loadEvaluationSchedule();
                 }
+                // Reflect current section in URL for deep-linking
+                if (window.location.hash !== '#' + sectionName) {
+                    window.location.hash = sectionName;
+                }
             }
         }
+
+        // Enable opening sections via URL hash (e.g., admin.php#eval_schedule)
+        function initSectionFromHash() {
+            const hash = (window.location.hash || '').replace('#', '');
+            if (hash) {
+                showSection(hash);
+            } else {
+                showSection('overview');
+            }
+        }
+        window.addEventListener('hashchange', initSectionFromHash);
+        document.addEventListener('DOMContentLoaded', initSectionFromHash);
 
         // Logout function
         function logout() {

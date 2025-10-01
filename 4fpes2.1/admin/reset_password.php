@@ -3,13 +3,13 @@ require_once __DIR__ . '/../config.php';
 requireRole('admin');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: manage_password_resets.php');
+    header('Location: manage_password_resets.php?reset=invalid');
     exit();
 }
 
 $token = $_POST['csrf_token'] ?? '';
 if (!validateCSRFToken($token)) {
-    header('Location: manage_password_resets.php');
+    header('Location: manage_password_resets.php?reset=invalid');
     exit();
 }
 
@@ -18,7 +18,7 @@ $identifier = sanitizeInput($_POST['identifier'] ?? '');
 $role = sanitizeInput($_POST['role'] ?? ''); // Expected: Student | Faculty | Dean (any case)
 
 if (!$request_id || !$identifier || !$role) {
-    header('Location: manage_password_resets.php');
+    header('Location: manage_password_resets.php?reset=invalid');
     exit();
 }
 
@@ -64,6 +64,16 @@ try {
 
     $user_id = (int)$row['user_id'];
 
+    // Ensure users.must_change_password column exists (backward compatibility)
+    try {
+        $chk = $pdo->prepare("SELECT COUNT(*) AS c FROM information_schema.columns WHERE table_schema = ? AND table_name = 'users' AND column_name = 'must_change_password'");
+        $chk->execute([DB_NAME]);
+        $hasCol = (int)($chk->fetch()['c'] ?? 0) > 0;
+        if (!$hasCol) {
+            $pdo->exec("ALTER TABLE users ADD COLUMN must_change_password TINYINT(1) NOT NULL DEFAULT 0 AFTER password");
+        }
+    } catch (PDOException $e) { /* ignore; next UPDATE may still fail if truly unsupported */ }
+
     // Ensure password_audit table exists
     try {
         $pdo->exec("CREATE TABLE IF NOT EXISTS password_audit (
@@ -98,6 +108,9 @@ try {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }
+    // Redirect with error flag
+    header('Location: manage_password_resets.php?reset=error');
+    exit();
 }
 
 header('Location: manage_password_resets.php?reset=success');
