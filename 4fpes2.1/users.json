@@ -1,0 +1,9 @@
+[
+  { "username": "student01", "password": "1234", "role": "student", "department": "Computer Science" },
+  { "username": "faculty01", "password": "1234", "role": "faculty", "department": "Computer Science" },
+  { "username": "dean01", "password": "1234", "role": "dean", "department": "Academic Affairs" },
+  { "username": "admin01", "password": "1234", "role": "admin", "department": "IT Department" },
+  { "username": "tech_admin", "password": "password", "role": "admin", "department": "Technology" },
+  { "username": "edu_admin", "password": "password", "role": "admin", "department": "Education" },
+  { "username": "bus_admin", "password": "password", "role": "admin", "department": "Business" }
+]

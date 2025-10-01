@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Dashboard</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="student.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="dashboard">
+    <div class="sidebar" id="sidebar">
+      <h2>Student Panel</h2>
+      <a href="#" onclick="showSection('home')">🏠 Dashboard</a>
+      <a href="#" onclick="showSection('evaluate')">📝 Evaluate Faculty</a>
+      <a href="#" onclick="showSection('reports')">📊 My Reports</a>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+
+    <div class="main-content">
+      <button class="sidebar-toggle" onclick="toggleSidebar()">☰ Menu</button>
+
+      <section id="home-section" class="content-section">
+        <h1>Welcome, Student</h1>
+        <p>Use the sidebar to evaluate your faculty members and view reports.</p>
+      </section>
+
+      <section id="evaluate-section" class="content-section" style="display:none;">
+        <h1>Faculty Evaluation</h1>
+        <form id="evaluationForm" class="evaluation-form">
+          <div class="form-group">
+            <label for="faculty">Select Faculty:</label>
+            <select id="faculty" required>
+              <option value="">-- Choose Faculty --</option>
+              <option value="faculty01">Prof. John Smith</option>
+              <option value="faculty02">Prof. Maria Garcia</option>
+              <option value="faculty03">Prof. James Lee</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>1. Teaching Effectiveness</label>
+            <select id="q1" required>
+              <option value="">-- Rate --</option>
+              <option>Excellent</option>
+              <option>Good</option>
+              <option>Average</option>
+              <option>Poor</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>2. Communication Skills</label>
+            <select id="q2" required>
+              <option value="">-- Rate --</option>
+              <option>Excellent</option>
+              <option>Good</option>
+              <option>Average</option>
+              <option>Poor</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>3. Punctuality</label>
+            <select id="q3" required>
+              <option value="">-- Rate --</option>
+              <option>Excellent</option>
+              <option>Good</option>
+              <option>Average</option>
+              <option>Poor</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="comments">Additional Comments</label>
+            <textarea id="comments"></textarea>
+          </div>
+          <button type="submit">Submit Evaluation</button>
+        </form>
+        <div id="successMessage" class="success-message" style="display:none;">
+          ✅ Your evaluation has been submitted!
+        </div>
+      </section>
+
+      <section id="reports-section" class="content-section" style="display:none;">
+        <h1>My Reports</h1>
+        <canvas id="reportChart"></canvas>
+        <table id="reportTable">
+          <thead>
+            <tr>
+              <th>Faculty</th>
+              <th>Teaching</th>
+              <th>Communication</th>
+              <th>Punctuality</th>
+              <th>Comments</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </section>
+    </div>
+  </div>
+  <script src="student.js"></script>
+</body>
+</html>
