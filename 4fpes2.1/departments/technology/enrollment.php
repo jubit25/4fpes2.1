@@ -1,5 +1,6 @@
 <?php
 require_once '../../config.php';
+require_once '../../catalog.php';
 requireRole('admin');
 
 // Ensure this is Technology department admin
@@ -39,7 +40,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $gender = sanitizeInput($_POST['gender'] ?? '');
         $year_level = sanitizeInput($_POST['year_level'] ?? '');
         $program = sanitizeInput($_POST['program'] ?? '');
-        $selected_department = sanitizeInput($_POST['department'] ?? $admin_department);
+        // Restrict scope: Department Admin can only operate within their own department
+        $selected_department = $admin_department;
         // Multi-assignments: list of selected faculty and JSON of subjects per faculty
         $assigned_faculty_ids = $_POST['assigned_faculty_user_ids'] ?? [];
         if (!is_array($assigned_faculty_ids)) { $assigned_faculty_ids = []; }
@@ -55,6 +57,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (empty($password) || empty($full_name) || empty($gender)) {
             $error = 'All required fields must be filled';
         } else {
+            // Validate full name: only ASCII letters and spaces; must contain at least one letter
+            if (!preg_match('/^(?=.*[A-Za-z])[A-Za-z ]+$/', $full_name)) {
+                $error = 'Full Name must only contain letters and spaces.';
+            }
             // Validate assigned faculty belongs to the selected department (if provided)
             if (!empty($assigned_faculty_ids)) {
                 try {
@@ -178,16 +184,8 @@ try {
 // Close DB connection after all queries in this request are complete
 $pdo = null;
 
-// Technology-specific programs
-$tech_programs = [
-    'Bachelor of Science in Information Technology',
-    'Bachelor of Science in Computer Science',
-    'Bachelor of Science in Software Engineering',
-    'Bachelor of Science in Cybersecurity',
-    'Bachelor of Science in Data Science',
-    'Bachelor of Science in Web Development',
-    'Associate in Computer Technology'
-];
+// Technology-specific programs (SOT) from centralized catalog
+$tech_programs = $PROGRAMS_BY_DEPT['Technology'] ?? [];
 ?>
 
 <!DOCTYPE html>
@@ -322,9 +320,7 @@ $tech_programs = [
                             <div>
                                 <label style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--tech-dark);">Department *</label>
                                 <select name="department" id="department_select" class="tech-input" required>
-                                    <option value="Technology" selected>School of Technology (SOT)</option>
-                                    <option value="Business">School of Business (SOB)</option>
-                                    <option value="Education">School of Education (SOE)</option>
+                                    <option value="Technology" selected><?php echo htmlspecialchars($DEPT_LABELS['Technology']); ?></option>
                                 </select>
                             </div>
                             <div>

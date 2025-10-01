@@ -107,7 +107,6 @@ $csrf = generateCSRFToken();
         <a href="admin.php#reports">System Reports</a>
         <a href="admin.php#eval_schedule">Manage Evaluation Schedule</a>
         <a href="manage_password_resets.php" style="background: var(--primary-color); color:#fff;">Password Reset Requests</a>
-        <a href="admin.php#settings">Settings</a>
         <button class="logout-btn" onclick="window.location.href='../auth.php?action=logout'">Logout</button>
       </div>
 
@@ -120,7 +119,10 @@ $csrf = generateCSRFToken();
           <div class="error-message" style="display:block; margin-bottom:1rem;">Invalid reset request. Please try again.</div>
         <?php endif; ?>
         <?php if (isset($_GET['reset']) && $_GET['reset'] === 'error'): ?>
-          <div class="error-message" style="display:block; margin-bottom:1rem;">An error occurred while resetting the password. Please check logs and try again.</div>
+          <div class="error-message" style="display:block; margin-bottom:1rem;">Failed to reset password. Please try again or check the database connection.</div>
+        <?php endif; ?>
+        <?php if (isset($_GET['reset']) && $_GET['reset'] === 'success'): ?>
+          <div class="success-message" style="display:block; margin-bottom:1rem;">Password has been reset successfully! Default password is 123.</div>
         <?php endif; ?>
 
         <div class="management-section">
@@ -170,7 +172,7 @@ $csrf = generateCSRFToken();
                       <td><span class="status-badge status-<?php echo htmlspecialchars($r['status']); ?>"><?php echo htmlspecialchars($r['status']); ?></span></td>
                       <td>
                         <div class="actions">
-                        <form method="POST" action="reset_password.php">
+                        <form method="POST" action="reset_password.php" onsubmit="return confirm('Are you sure you want to reset this password?');">
                           <input type="hidden" name="csrf_token" value="<?php echo $csrf; ?>">
                           <input type="hidden" name="request_id" value="<?php echo (int)$r['request_id']; ?>">
                           <input type="hidden" name="identifier" value="<?php echo htmlspecialchars($r['identifier']); ?>">
@@ -202,7 +204,7 @@ $csrf = generateCSRFToken();
     <div id="successModal" class="modal" style="display:none; position:fixed; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,.5); z-index:1000;">
       <div class="modal-content" style="background:#fff; margin:10% auto; padding:1.5rem; border-radius:12px; width:90%; max-width:420px; text-align:center; box-shadow: var(--card-shadow-hover);">
         <h3 style="margin-bottom:.5rem;">Password Reset</h3>
-        <p style="color:#374151; margin-bottom:1rem;">Password has been reset to default (123).</p>
+        <p style="color:#374151; margin-bottom:1rem;">Password has been reset successfully! Default password is 123.</p>
         <button id="modalCloseBtn" class="btn btn-green">OK</button>
       </div>
     </div>

@@ -1,5 +1,6 @@
 <?php
 require_once '../config.php';
+require_once '../catalog.php';
 requireRole('admin');
 
 // Get admin info
@@ -294,7 +295,6 @@ foreach ($criteria as $criterion) {
             <a href="#reports">System Reports</a>
             <a href="#eval_schedule">Manage Evaluation Schedule</a>
             <a href="manage_password_resets.php">Password Reset Requests</a>
-            <a href="#settings">Settings</a>
             <button class="logout-btn" onclick="logout()">Logout</button>
         </div>
 
@@ -526,31 +526,7 @@ foreach ($criteria as $criterion) {
                 </div>
             </div>
 
-            <!-- Settings Section -->
-            <div id="settings-section" class="content-section" style="display: none;">
-                <h2>System Settings</h2>
-                
-                <div class="management-section">
-                    <h3>System Configuration</h3>
-                    <p>System settings and configuration options would be implemented here.</p>
-                    
-                    <div class="form-group">
-                        <label>Academic Year:</label>
-                        <input type="text" value="2023-2024" placeholder="Current academic year">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Current Semester:</label>
-                        <select>
-                            <option value="1st Semester">1st Semester</option>
-                            <option value="2nd Semester">2nd Semester</option>
-                            <option value="Summer">Summer</option>
-                        </select>
-                    </div>
-                    
-                    <button class="submit-btn">Save Settings</button>
-                </div>
-            </div>
+            <!-- Settings Section removed -->
         </div>
     </div>
 
@@ -599,9 +575,9 @@ foreach ($criteria as $criterion) {
                     <label for="department">Department:</label>
                     <select id="department" name="department" required>
                         <option value="">-- Select Department --</option>
-                        <option value="Technology">School of Technology</option>
-                        <option value="Business">School of Business</option>
-                        <option value="Education">School of Education</option>
+                        <option value="Business">SOB (School of Business)</option>
+                        <option value="Education">SOE (School of Education)</option>
+                        <option value="Technology">SOT (School of Technology)</option>
                     </select>
                 </div>
 
@@ -686,9 +662,9 @@ foreach ($criteria as $criterion) {
                     <label for="editDepartment">Department:</label>
                     <select id="editDepartment" name="department" required>
                         <option value="">-- Select Department --</option>
-                        <option value="Technology">School of Technology</option>
-                        <option value="Business">School of Business</option>
-                        <option value="Education">School of Education</option>
+                        <option value="Business">SOB (School of Business)</option>
+                        <option value="Education">SOE (School of Education)</option>
+                        <option value="Technology">SOT (School of Technology)</option>
                     </select>
                 </div>
 
@@ -867,7 +843,9 @@ foreach ($criteria as $criterion) {
 
         // Enable opening sections via URL hash (e.g., admin.php#eval_schedule)
         function initSectionFromHash() {
-            const hash = (window.location.hash || '').replace('#', '');
+            const raw = (window.location.hash || '').replace('#', '');
+            // Redirect legacy #settings to overview
+            const hash = raw === 'settings' ? 'overview' : raw;
             if (hash) {
                 showSection(hash);
             } else {
@@ -984,39 +962,8 @@ foreach ($criteria as $criterion) {
             toggleUsernameVisibility(showUsername);
         }
 
-        // Department-specific program lists (mirrors department admin pages)
-        const PROGRAMS_BY_DEPT = {
-            'Technology': [
-                'Bachelor of Science in Information Technology',
-                'Bachelor of Science in Computer Science',
-                'Bachelor of Science in Software Engineering',
-                'Bachelor of Science in Cybersecurity',
-                'Bachelor of Science in Data Science',
-                'Bachelor of Science in Web Development',
-                'Associate in Computer Technology'
-            ],
-            'Business': [
-                'Bachelor of Science in Business Administration',
-                'Bachelor of Science in Accounting',
-                'Bachelor of Science in Marketing',
-                'Bachelor of Science in Finance',
-                'Bachelor of Science in Human Resource Management',
-                'Bachelor of Science in Entrepreneurship',
-                'Bachelor of Science in International Business',
-                'Master of Business Administration (MBA)'
-            ],
-            'Education': [
-                'Bachelor of Elementary Education',
-                'Bachelor of Secondary Education - English',
-                'Bachelor of Secondary Education - Mathematics',
-                'Bachelor of Secondary Education - Science',
-                'Bachelor of Secondary Education - Social Studies',
-                'Bachelor of Physical Education',
-                'Bachelor of Special Needs Education',
-                'Master of Arts in Education',
-                'Master of Arts in Teaching'
-            ]
-        };
+        // Department-specific program lists are sourced centrally from catalog.php
+        const PROGRAMS_BY_DEPT = <?php echo json_encode($PROGRAMS_BY_DEPT, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 
         function populateProgramOptions(department) {
             const progSel = document.getElementById('program');
@@ -1419,29 +1366,18 @@ foreach ($criteria as $criterion) {
 
         // Form submission
         document.addEventListener('DOMContentLoaded', function() {
-            // Full Name validation (no digits; allow letters, spaces, hyphen, apostrophe)
+            // Full Name validation: only ASCII letters and spaces; must contain at least one letter
             function isValidFullName(name) {
                 if (!name) return false;
-                // Prefer Unicode letter property if supported
-                try {
-                    const reU = new RegExp("^(?=.*\\\\l)(?=.*[A-Za-z\u00C0-\u024F])[\l\s'-]+$", 'u');
-                } catch(e) {}
-                // Use Unicode property escapes when available
-                try {
-                    const re = /^(?=.*\p{L})[\p{L}\s'-]+$/u;
-                    return re.test(name);
-                } catch(e) {
-                    // Fallback: basic Latin letters, spaces, hyphen, apostrophe
-                    const re2 = /^(?=.*[A-Za-z])[A-Za-z\s'-]+$/;
-                    return re2.test(name);
-                }
+                const re = /^(?=.*[A-Za-z])[A-Za-z ]+$/;
+                return re.test(name.trim());
             }
 
             function attachFullNameValidation(inputId, errorId) {
                 const input = document.getElementById(inputId);
                 const err = document.getElementById(errorId);
                 if (!input || !err) return () => true;
-                const msg = "Full Name cannot contain numbers. Please enter a valid name.";
+                const msg = "Full Name must only contain letters and spaces.";
                 const validate = () => {
                     const ok = isValidFullName(input.value.trim());
                     if (!ok) {

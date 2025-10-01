@@ -23,6 +23,31 @@ if (!$request_id || !$identifier || !$role) {
 }
 
 try {
+    // Ensure auxiliary schema BEFORE starting transaction to avoid implicit commits from DDL
+    // Ensure users.must_change_password column exists (backward compatibility)
+    try {
+        $chk = $pdo->prepare("SELECT COUNT(*) AS c FROM information_schema.columns WHERE table_schema = ? AND table_name = 'users' AND column_name = 'must_change_password'");
+        $chk->execute([DB_NAME]);
+        $hasCol = (int)($chk->fetch()['c'] ?? 0) > 0;
+        if (!$hasCol) {
+            $pdo->exec("ALTER TABLE users ADD COLUMN must_change_password TINYINT(1) NOT NULL DEFAULT 0 AFTER password");
+        }
+    } catch (PDOException $e) { /* ignore; non-fatal */ }
+
+    // Ensure password_audit table exists
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS password_audit (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            action VARCHAR(50) NOT NULL,
+            performed_by INT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_user (user_id),
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (performed_by) REFERENCES users(id) ON DELETE SET NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+    } catch (PDOException $e) { /* ignore */ }
+
     $pdo->beginTransaction();
 
     // Normalize role to canonical case and map to table/id field
@@ -59,34 +84,16 @@ try {
     $row = $stmt->fetch();
 
     if (!$row) {
-        throw new Exception('Identifier not found');
+        // Fallback: Some older reset requests may store the username as the identifier
+        $stmt = $pdo->prepare('SELECT id AS user_id FROM users WHERE username = ? LIMIT 1');
+        $stmt->execute([$identifier]);
+        $row = $stmt->fetch();
+        if (!$row) {
+            throw new Exception('Identifier not found');
+        }
     }
 
     $user_id = (int)$row['user_id'];
-
-    // Ensure users.must_change_password column exists (backward compatibility)
-    try {
-        $chk = $pdo->prepare("SELECT COUNT(*) AS c FROM information_schema.columns WHERE table_schema = ? AND table_name = 'users' AND column_name = 'must_change_password'");
-        $chk->execute([DB_NAME]);
-        $hasCol = (int)($chk->fetch()['c'] ?? 0) > 0;
-        if (!$hasCol) {
-            $pdo->exec("ALTER TABLE users ADD COLUMN must_change_password TINYINT(1) NOT NULL DEFAULT 0 AFTER password");
-        }
-    } catch (PDOException $e) { /* ignore; next UPDATE may still fail if truly unsupported */ }
-
-    // Ensure password_audit table exists
-    try {
-        $pdo->exec("CREATE TABLE IF NOT EXISTS password_audit (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            user_id INT NOT NULL,
-            action VARCHAR(50) NOT NULL,
-            performed_by INT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_user (user_id),
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            FOREIGN KEY (performed_by) REFERENCES users(id) ON DELETE SET NULL
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
-    } catch (PDOException $e) { /* ignore */ }
 
     // Reset password to '123' (hashed) and force change on next login
     $new_hash = password_hash('123', PASSWORD_DEFAULT);
@@ -96,18 +103,24 @@ try {
     // Audit: admin reset
     try {
         $aud = $pdo->prepare('INSERT INTO password_audit (user_id, action, performed_by) VALUES (?, ?, ?)');
-        $aud->execute([$user_id, 'admin_reset', (int)($_SESSION['user_id'] ?? 0)]);
+        $performedBy = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null;
+        $aud->execute([$user_id, 'admin_reset', $performedBy]);
     } catch (PDOException $e) { /* ignore */ }
 
     // Mark the request as Resolved
-    $stmt = $pdo->prepare('UPDATE password_reset_requests SET status = "Resolved" WHERE id = ?');
-    $stmt->execute([$request_id]);
+    // Idempotent resolve: set Resolved and do not error if already resolved
+    try {
+        $stmt = $pdo->prepare('UPDATE password_reset_requests SET status = "Resolved" WHERE id = ?');
+        $stmt->execute([$request_id]);
+    } catch (PDOException $e) { /* ignore */ }
 
     $pdo->commit();
 } catch (Exception $e) {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }
+    // Log the error for backend debugging, but do not expose details to the Admin UI
+    error_log('[reset_password.php] Password reset failed: ' . $e->getMessage());
     // Redirect with error flag
     header('Location: manage_password_resets.php?reset=error');
     exit();

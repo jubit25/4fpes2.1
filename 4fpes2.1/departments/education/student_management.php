@@ -1,5 +1,6 @@
 <?php
 require_once '../../config.php';
+require_once '../../catalog.php';
 requireRole('admin');
 
 // Ensure this is Education department admin
@@ -49,6 +50,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Begin transaction for DML only
             $txStarted = false;
             try { $txStarted = $pdo->beginTransaction(); } catch (PDOException $e) { $txStarted = $pdo->inTransaction(); }
+
+            // Validate Full Name: only ASCII letters and spaces; must contain at least one letter
+            if (!preg_match('/^(?=.*[A-Za-z])[A-Za-z ]+$/', $full_name)) {
+                throw new PDOException('Full Name must only contain letters and spaces.');
+            }
 
             // Update user info
             $stmt = $pdo->prepare("UPDATE users SET full_name = ?, email = ? WHERE id = ? AND department = 'Education'");
@@ -146,18 +152,8 @@ if (!empty($student_ids)) {
     }
 }
 
-// Education programs for dropdown
-$education_programs = [
-    'Bachelor of Elementary Education',
-    'Bachelor of Secondary Education - English',
-    'Bachelor of Secondary Education - Mathematics',
-    'Bachelor of Secondary Education - Science',
-    'Bachelor of Secondary Education - Social Studies',
-    'Bachelor of Physical Education',
-    'Bachelor of Special Needs Education',
-    'Master of Arts in Education',
-    'Master of Arts in Teaching'
-];
+// Education programs for dropdown from centralized catalog
+$education_programs = $PROGRAMS_BY_DEPT['Education'] ?? [];
 ?>
 
 <!DOCTYPE html>

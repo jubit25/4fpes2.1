@@ -1,5 +1,6 @@
 <?php
 require_once '../../config.php';
+require_once '../../catalog.php';
 requireRole('admin');
 
 // Ensure this is Technology department admin
@@ -44,9 +45,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
             } catch (PDOException $e) { /* ignore if already exists */ }
 
-            // Basic server-side validation for full name (letters, spaces, hyphen, apostrophe; no digits)
-            if (!preg_match('/^(?=.*\p{L})[\p{L}\s\'-]+$/u', $full_name)) {
-                throw new PDOException("Full Name cannot contain numbers. Please enter a valid name.");
+            // Server-side validation for Full Name: only ASCII letters and spaces; must contain at least one letter
+            if (!preg_match('/^(?=.*[A-Za-z])[A-Za-z ]+$/', $full_name)) {
+                throw new PDOException('Full Name must only contain letters and spaces.');
             }
 
             $pdo->beginTransaction();
@@ -147,16 +148,8 @@ if (!empty($student_ids)) {
     }
 }
 
-// Technology programs for dropdown
-$tech_programs = [
-    'Bachelor of Science in Information Technology',
-    'Bachelor of Science in Computer Science',
-    'Bachelor of Science in Software Engineering',
-    'Bachelor of Science in Cybersecurity',
-    'Bachelor of Science in Data Science',
-    'Bachelor of Science in Web Development',
-    'Associate in Computer Technology'
-];
+// Technology programs for dropdown from centralized catalog
+$tech_programs = $PROGRAMS_BY_DEPT['Technology'] ?? [];
 ?>
 
 <!DOCTYPE html>

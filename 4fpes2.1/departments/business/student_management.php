@@ -1,5 +1,6 @@
 <?php
 require_once '../../config.php';
+require_once '../../catalog.php';
 requireRole('admin');
 
 // Ensure this is Business department admin
@@ -43,6 +44,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
 
             $pdo->beginTransaction();
+
+            // Validate Full Name: only ASCII letters and spaces; must contain at least one letter
+            if (!preg_match('/^(?=.*[A-Za-z])[A-Za-z ]+$/', $full_name)) {
+                throw new PDOException('Full Name must only contain letters and spaces.');
+            }
 
             // Update user info
             $stmt = $pdo->prepare("UPDATE users SET full_name = ?, email = ? WHERE id = ? AND department = 'Business'");
@@ -137,17 +143,8 @@ if (!empty($student_ids)) {
     }
 }
 
-// Business programs for dropdown
-$business_programs = [
-    'Bachelor of Science in Business Administration',
-    'Bachelor of Science in Accounting',
-    'Bachelor of Science in Marketing',
-    'Bachelor of Science in Finance',
-    'Bachelor of Science in Human Resource Management',
-    'Bachelor of Science in Entrepreneurship',
-    'Bachelor of Science in International Business',
-    'Master of Business Administration (MBA)'
-];
+// Business programs for dropdown from centralized catalog
+$business_programs = $PROGRAMS_BY_DEPT['Business'] ?? [];
 ?>
 
 <!DOCTYPE html>

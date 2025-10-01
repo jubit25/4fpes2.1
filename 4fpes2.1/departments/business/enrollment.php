@@ -1,5 +1,6 @@
 <?php
 require_once '../../config.php';
+require_once '../../catalog.php';
 requireRole('admin');
 
 // Ensure this is Business department admin
@@ -39,7 +40,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $gender = sanitizeInput($_POST['gender'] ?? '');
         $year_level = sanitizeInput($_POST['year_level'] ?? '');
         $program = sanitizeInput($_POST['program'] ?? '');
-        $selected_department = sanitizeInput($_POST['department'] ?? $admin_department);
+        // Restrict scope: Department Admin can only operate within their own department
+        $selected_department = $admin_department;
         // Multi-assignments: faculty list and subjects payload
         $assigned_faculty_ids = $_POST['assigned_faculty_user_ids'] ?? [];
         if (!is_array($assigned_faculty_ids)) { $assigned_faculty_ids = []; }
@@ -55,6 +57,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (empty($password) || empty($full_name) || empty($gender)) {
             $error = 'All required fields must be filled';
         } else {
+            // Validate full name: only ASCII letters and spaces; must contain at least one letter
+            if (!preg_match('/^(?=.*[A-Za-z])[A-Za-z ]+$/', $full_name)) {
+                $error = 'Full Name must only contain letters and spaces.';
+            }
             // Validate all assigned faculty belong to the selected department
             if (!empty($assigned_faculty_ids)) {
                 try {
@@ -173,17 +179,8 @@ try {
 // Close DB connection after all queries in this request are complete
 $pdo = null;
 
-// Business-specific programs
-$business_programs = [
-    'Bachelor of Science in Business Administration',
-    'Bachelor of Science in Accounting',
-    'Bachelor of Science in Marketing',
-    'Bachelor of Science in Finance',
-    'Bachelor of Science in Human Resource Management',
-    'Bachelor of Science in Entrepreneurship',
-    'Bachelor of Science in International Business',
-    'Master of Business Administration (MBA)'
-];
+// Business-specific programs (SOB) from centralized catalog
+$business_programs = $PROGRAMS_BY_DEPT['Business'] ?? [];
 ?>
 
 <!DOCTYPE html>
@@ -325,9 +322,7 @@ $business_programs = [
                             <div>
                                 <label style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--business-dark); text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px;">Department *</label>
                                 <select name="department" id="department_select" class="business-input" required>
-                                    <option value="Business" selected>School of Business (SOB)</option>
-                                    <option value="Technology">School of Technology (SOT)</option>
-                                    <option value="Education">School of Education (SOE)</option>
+                                    <option value="Business" selected><?php echo htmlspecialchars($DEPT_LABELS['Business']); ?></option>
                                 </select>
                             </div>
                             <div>

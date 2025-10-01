@@ -45,9 +45,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
 
-            // Validate full name: allow letters, spaces, hyphen, apostrophe; disallow digits
-            if (!preg_match("/^(?=.*\\p{L})[\\p{L}\\s'-]+$/u", $full_name)) {
-                throw new Exception("Full Name cannot contain numbers. Please enter a valid name.");
+            // Validate full name: only ASCII letters and spaces; must contain at least one letter
+            if (!preg_match('/^(?=.*[A-Za-z])[A-Za-z ]+$/', $full_name)) {
+                throw new Exception('Full Name must only contain letters and spaces.');
             }
             
             if (!in_array($role, ['student', 'faculty', 'dean', 'admin'])) {
@@ -388,9 +388,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new Exception('Full name and department are required');
             }
 
-            // Validate full name: allow letters, spaces, hyphen, apostrophe; disallow digits
-            if (!preg_match("/^(?=.*\\p{L})[\\p{L}\\s'-]+$/u", $full_name)) {
-                throw new Exception("Full Name cannot contain numbers. Please enter a valid name.");
+            // Validate full name: only ASCII letters and spaces; must contain at least one letter
+            if (!preg_match('/^(?=.*[A-Za-z])[A-Za-z ]+$/', $full_name)) {
+                throw new Exception('Full Name must only contain letters and spaces.');
             }
             
             // Get user's current role
@@ -605,17 +605,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Ignore audit failures
             }
 
-            // Success response with confirmation message
-            $displayName = $target['full_name'] ?: ('User ID ' . $target['id']);
+            // Success response with standardized confirmation message
             echo json_encode([
                 'success' => true,
-                'message' => 'Password reset to default (123) for ' . $displayName
+                'message' => 'Password has been reset successfully! Default password is 123.'
             ]);
 
         } catch (Exception $e) {
+            // Log error for debugging without exposing sensitive details
+            error_log('[manage_users.php] reset_password failed: ' . $e->getMessage());
             echo json_encode([
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => 'Failed to reset password. Please try again or check the database connection.'
             ]);
         }
     }

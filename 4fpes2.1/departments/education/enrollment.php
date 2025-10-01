@@ -1,5 +1,6 @@
 <?php
 require_once '../../config.php';
+require_once '../../catalog.php';
 requireRole('admin');
 
 // Ensure this is Education department admin
@@ -39,7 +40,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $gender = sanitizeInput($_POST['gender'] ?? '');
         $year_level = sanitizeInput($_POST['year_level'] ?? '');
         $program = sanitizeInput($_POST['program'] ?? '');
-        $selected_department = sanitizeInput($_POST['department'] ?? $admin_department);
+        // Restrict scope: Department Admin can only operate within their own department
+        $selected_department = $admin_department;
         // Multi-assignments: faculty list and subjects payload
         $assigned_faculty_ids = $_POST['assigned_faculty_user_ids'] ?? [];
         if (!is_array($assigned_faculty_ids)) { $assigned_faculty_ids = []; }
@@ -55,6 +57,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (empty($password) || empty($full_name) || empty($gender)) {
             $error = 'All required fields must be filled';
         } else {
+            // Validate full name: only ASCII letters and spaces; must contain at least one letter
+            if (!preg_match('/^(?=.*[A-Za-z])[A-Za-z ]+$/', $full_name)) {
+                $error = 'Full Name must only contain letters and spaces.';
+            }
             // Validate all assigned faculty belong to selected department
             if (!empty($assigned_faculty_ids)) {
                 try {
@@ -173,18 +179,8 @@ try {
 // Close DB connection after all queries in this request are complete
 $pdo = null;
 
-// Education-specific programs
-$education_programs = [
-    'Bachelor of Elementary Education',
-    'Bachelor of Secondary Education - English',
-    'Bachelor of Secondary Education - Mathematics',
-    'Bachelor of Secondary Education - Science',
-    'Bachelor of Secondary Education - Social Studies',
-    'Bachelor of Physical Education',
-    'Bachelor of Special Needs Education',
-    'Master of Arts in Education',
-    'Master of Arts in Teaching'
-];
+// Education-specific programs (SOE) from centralized catalog
+$education_programs = $PROGRAMS_BY_DEPT['Education'] ?? [];
 ?>
 
 <!DOCTYPE html>
@@ -323,9 +319,7 @@ $education_programs = [
                             <div>
                                 <label style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--education-dark);">Department *</label>
                                 <select name="department" id="department_select" class="education-input" required>
-                                    <option value="Education" selected>School of Education (SOE)</option>
-                                    <option value="Technology">School of Technology (SOT)</option>
-                                    <option value="Business">School of Business (SOB)</option>
+                                    <option value="Education" selected><?php echo htmlspecialchars($DEPT_LABELS['Education']); ?></option>
                                 </select>
                             </div>
                             <div>
