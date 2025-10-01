@@ -105,7 +105,7 @@ $activePeriod = $evalOpen ? getActiveSemesterYear($pdo) : null;
                     $bannerMsg = $evalSchedule['notice'] ?? 'Evaluations are currently OPEN.';
                     echo '<div class="success-message">' . htmlspecialchars($bannerMsg) . '</div>';
                 } else {
-                    $msg = $evalSchedule['notice'] ?? 'Evaluation is currently closed. Please wait for the admin to open the schedule.';
+                    $msg = 'Evaluation period is not active.';
                     echo '<div class="error-message">' . htmlspecialchars($msg) . '</div>';
                 }
             ?>
@@ -194,7 +194,7 @@ $activePeriod = $evalOpen ? getActiveSemesterYear($pdo) : null;
                         <button type="submit" class="submit-btn">Submit Evaluation</button>
                     </form>
                     <?php else: ?>
-                        <div class="error-message">Evaluation is currently closed. Please wait for the admin to open the schedule.</div>
+                        <div class="error-message">Evaluation period is not active.</div>
                     <?php endif; ?>
                 </div>
             </div>

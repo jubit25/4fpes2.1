@@ -852,6 +852,16 @@ foreach ($criteria as $criterion) {
                 if (window.location.hash !== '#' + sectionName) {
                     window.location.hash = sectionName;
                 }
+                // Highlight active link in sidebar
+                const links = document.querySelectorAll('.sidebar a[href^="#"]');
+                links.forEach(a => {
+                    const href = a.getAttribute('href');
+                    if (href === '#' + sectionName) {
+                        a.classList.add('active');
+                    } else {
+                        a.classList.remove('active');
+                    }
+                });
             }
         }
 
@@ -1626,8 +1636,10 @@ foreach ($criteria as $criterion) {
                 });
             }
 
-            // Show overview section by default
-            showSection('overview');
+            // Initialize section from URL hash (default to overview is handled in initSectionFromHash)
+            if (typeof initSectionFromHash === 'function') {
+                initSectionFromHash();
+            }
 
             // Wire Evaluation Schedule buttons
             const btnSave = document.getElementById('btn-save-schedule');

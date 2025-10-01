@@ -106,6 +106,7 @@ h1, h2 { color: var(--dark-color); margin-bottom: 1rem; font-weight: 600; }
 .sidebar h2 { margin-bottom: 2rem; font-size: 1.3rem; color: var(--light-color); }
 .sidebar a { color: var(--light-gray); text-decoration: none; margin: 0.75rem 0; display: block; padding: 0.6rem 0.8rem; border-radius: 8px; transition: var(--transition); }
 .sidebar a:hover { background-color: var(--primary-color); color: white; }
+.sidebar a.active { background-color: var(--primary-color); color: #fff; box-shadow: 0 0 0 2px rgba(16,185,129,.25) inset; }
 .main-content { flex: 1; padding: 2rem; background: var(--bg-color); transition: var(--transition); }
 .logout-btn { margin-top: auto; background-color: var(--danger-color); padding: 0.75rem; border: none; border-radius: 8px; color: white; cursor: pointer; transition: var(--transition); }
 .logout-btn:hover { background-color: var(--danger-dark); }

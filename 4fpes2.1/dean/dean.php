@@ -380,7 +380,7 @@ try {
                     $bannerMsg = $evalSchedule['notice'] ?? 'Evaluations are currently OPEN.';
                     echo '<div class="success-message">' . htmlspecialchars($bannerMsg) . '</div>';
                 } else {
-                    $msg = $evalSchedule['notice'] ?? 'Evaluation is not available for this semester. Please wait for the current evaluation schedule.';
+                    $msg = 'Evaluation period is not active.';
                     echo '<div class="error-message">' . htmlspecialchars($msg) . '</div>';
                 }
             ?>

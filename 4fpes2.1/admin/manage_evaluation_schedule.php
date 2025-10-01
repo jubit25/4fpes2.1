@@ -26,8 +26,14 @@ try {
             // Normalize empty -> NULL
             $startAt = $start !== '' ? (new DateTime($start))->format('Y-m-d H:i:s') : null;
             $endAt = $end !== '' ? (new DateTime($end))->format('Y-m-d H:i:s') : null;
+            // Validate window if both provided
+            if ($startAt && $endAt) {
+                if (new DateTime($startAt) >= new DateTime($endAt)) {
+                    throw new Exception('Start date/time must be before End date/time.');
+                }
+            }
             saveEvaluationSchedule($pdo, $startAt, $endAt, $notice !== '' ? $notice : null);
-            echo json_encode(['success' => true, 'message' => 'Schedule saved']);
+            echo json_encode(['success' => true, 'message' => 'Evaluation schedule saved successfully!']);
             break;
         }
         case 'open_now': {
@@ -42,7 +48,7 @@ try {
         }
         case 'set_auto': {
             setEvaluationOverride($pdo, 'auto');
-            echo json_encode(['success' => true, 'message' => 'Override disabled; using schedule.']);
+            echo json_encode(['success' => true, 'message' => 'Evaluation schedule is now active.']);
             break;
         }
         default:
