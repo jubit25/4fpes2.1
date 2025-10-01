@@ -7,12 +7,18 @@ define('DB_NAME', 'faculty_evaluation_system');
 
 // Start session
 session_start();
+// Global timezone: Philippine Standard Time
+// Ensures all PHP DateTime/date() calls use Asia/Manila across the app
+date_default_timezone_set('Asia/Manila');
 
 // Database connection
 try {
     $pdo = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+    // Align MySQL session time zone with PHP (Asia/Manila is UTC+08:00)
+    // This ensures NOW(), CURRENT_TIMESTAMP, and TIMESTAMP columns reflect Philippine time
+    try { $pdo->exec("SET time_zone = '+08:00'"); } catch (PDOException $e) { /* ignore if not permitted */ }
 } catch(PDOException $e) {
     die("Connection failed: " . $e->getMessage());
 }

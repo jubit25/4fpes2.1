@@ -1209,10 +1209,17 @@ foreach ($criteria as $criterion) {
         }
 
         function toLocalDatetimeValue(mysqlDt) {
-            // mysql to input[type=datetime-local] (assumes server in local time)
-            const d = new Date(mysqlDt.replace(' ', 'T'));
-            const pad = n => (n<10?('0'+n):n);
-            return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            // Convert MySQL DATETIME (stored/displayed in Asia/Manila) to input[type=datetime-local]
+            // Parse components directly to avoid browser timezone conversions.
+            if (!mysqlDt) return '';
+            const parts = mysqlDt.trim().split(' ');
+            const datePart = parts[0] || '';
+            const timePart = parts[1] || '00:00:00';
+            const [y, m, d] = datePart.split('-');
+            const [hh, mm] = timePart.split(':');
+            const pad = v => (String(v).length === 1 ? '0' + v : String(v));
+            if (!y || !m || !d) return '';
+            return `${y}-${pad(m)}-${pad(d)}T${pad(hh)}:${pad(mm)}`;
         }
 
         function fromLocalDatetimeValue(val) {
