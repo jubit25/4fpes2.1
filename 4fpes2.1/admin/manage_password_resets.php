@@ -107,7 +107,10 @@ $csrf = generateCSRFToken();
         <a href="admin.php#reports">System Reports</a>
         <a href="admin.php#eval_schedule">Manage Evaluation Schedule</a>
         <a href="manage_password_resets.php" style="background: var(--primary-color); color:#fff;">Password Reset Requests</a>
-        <button class="logout-btn" onclick="window.location.href='../auth.php?action=logout'">Logout</button>
+        <form id="logoutForm" action="../auth.php" method="POST" style="margin: 0;">
+            <input type="hidden" name="action" value="logout">
+            <button type="submit" class="logout-btn">Logout</button>
+        </form>
       </div>
 
       <div class="main-content">

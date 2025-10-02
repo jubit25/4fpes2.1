@@ -108,7 +108,20 @@ h1, h2 { color: var(--dark-color); margin-bottom: 1rem; font-weight: 600; }
 .sidebar a:hover { background-color: var(--primary-color); color: white; }
 .sidebar a.active { background-color: var(--primary-color); color: #fff; box-shadow: 0 0 0 2px rgba(16,185,129,.25) inset; }
 .main-content { flex: 1; padding: 2rem; background: var(--bg-color); transition: var(--transition); }
-.logout-btn { margin-top: auto; background-color: var(--danger-color); padding: 0.75rem; border: none; border-radius: 8px; color: white; cursor: pointer; transition: var(--transition); }
+.logout-btn { 
+  margin-top: auto; 
+  background-color: var(--danger-color); 
+  padding: 0.75rem 1rem; 
+  border: none; 
+  border-radius: 8px; 
+  color: white; 
+  cursor: pointer; 
+  transition: var(--transition); 
+  width: 100%;
+  font-size: 1rem;
+  font-weight: 500;
+  text-align: center;
+}
 .logout-btn:hover { background-color: var(--danger-dark); }
 /* Toggle */
 .sidebar-toggle { display: none; font-size: 1.5rem; cursor: pointer; margin-bottom: 1rem; background: none; border: none; color: var(--dark-color); }

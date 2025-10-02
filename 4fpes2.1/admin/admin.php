@@ -154,10 +154,6 @@ foreach ($criteria as $criterion) {
             color: white;
         }
         
-        .btn-reset {
-            background: var(--warning-color);
-            color: white;
-        }
         
         .btn-small:hover {
             opacity: 0.8;
@@ -425,9 +421,6 @@ foreach ($criteria as $criterion) {
                                             <button class="btn-small btn-edit" onclick="editUser(<?php echo $user['id']; ?>)">Edit</button>
                                             <?php if ($user['id'] != $_SESSION['user_id']): ?>
                                                 <button class="btn-small btn-delete" onclick="deleteUser(<?php echo $user['id']; ?>)">Delete</button>
-                                            <?php endif; ?>
-                                            <?php if (in_array($user['role'], ['student','faculty','dean'])): ?>
-                                                <button class="btn-small btn-reset" onclick="resetPassword(<?php echo $user['id']; ?>, '<?php echo htmlspecialchars(addslashes($user['full_name'] ?: $user['username'])); ?>')">Reset</button>
                                             <?php endif; ?>
                                         </div>
                                     </td>
@@ -1032,27 +1025,6 @@ foreach ($criteria as $criterion) {
             }
         }
 
-        // Reset password action
-        function resetPassword(userId, displayName) {
-            if (!confirm('Reset password to default (123) for ' + displayName + '?')) return;
-            const formData = new FormData();
-            formData.append('action', 'reset_password');
-            formData.append('user_id', userId);
-            formData.append('csrf_token', CSRF_TOKEN);
-            fetch('manage_users.php', {
-                method: 'POST',
-                body: formData
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    alert(data.message);
-                } else {
-                    alert('Error: ' + data.message);
-                }
-            })
-            .catch(() => alert('An error occurred while resetting the password.'));
-        }
 
         // Criteria management functions
         function openAddCriterionModal() {

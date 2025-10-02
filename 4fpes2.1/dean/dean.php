@@ -1004,6 +1004,8 @@ try {
                         statusEl.style.color = 'var(--danger-color)';
                     }
                 })
+                .catch(error => {
+                    console.error('Error:', error);
                     statusEl.textContent = 'An error occurred while submitting.';
                     statusEl.style.color = 'var(--danger-color)';
                 });
